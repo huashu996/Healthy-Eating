@@ -1,0 +1,10 @@
+{
+  "port": 8765,
+  "data_root": "data",
+  "timezone": "Asia/Shanghai",
+  "timezone_confirmed": true,
+  "public_sources_enabled": false,
+  "agent_enabled": false,
+  "recipe_seed": "none",
+  "mirror_transport": "disabled"
+}

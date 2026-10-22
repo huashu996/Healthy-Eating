@@ -1,0 +1,4 @@
+import type { SVGProps } from 'react';
+export function BathroomScaleIcon(props:SVGProps<SVGSVGElement>){return <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M7 9a6.3 6.3 0 0 1 10 0l-2 3H9Z"/><path d="m12 11 1-3M7 17h2m6 0h2"/></svg>;}
+export function BodyFatIcon(props:SVGProps<SVGSVGElement>){return <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="9" cy="4" r="2.3"/><path d="M5.5 8.5 3.5 10l-1 5h3l.5 7h6l.5-7M5.5 8.5h7L15 11"/><path d="m16 21 5-7"/><circle cx="16" cy="14" r="1"/><circle cx="21" cy="21" r="1"/></svg>;}
+

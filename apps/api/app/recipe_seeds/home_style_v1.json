@@ -1,0 +1,128 @@
+{
+  "schema_version": "1.0",
+  "seed_id": "home_style_v1",
+  "title": "可选家常菜式入门资料",
+  "description": "仅含抽象菜式、食材、烹调类别与主食搭配，不含个人资料、原图、摄入记录、喜好判断、原料份量或营养目标。",
+  "recipes": [
+    {
+      "id": "salmon-greens-tofu-bread",
+      "title": "三文鱼＋油麦菜炖豆腐＋面包",
+      "foods": ["三文鱼", "油麦菜", "豆腐", "面包"],
+      "methods": ["鱼排熟制", "叶菜豆腐炖煮"],
+      "dish_components": ["三文鱼排", "油麦菜炖豆腐"],
+      "staples": ["面包"],
+      "combination_pattern": "鱼排单盘＋叶菜豆腐汤锅＋面包",
+      "meal_types": ["午餐", "晚餐"]
+    },
+    {
+      "id": "chicken-vegetable-curry-rice",
+      "title": "咖喱鸡胸肉土豆胡萝卜＋米饭",
+      "foods": ["鸡胸肉", "土豆", "胡萝卜", "米饭"],
+      "methods": ["咖喱炖煮"],
+      "dish_components": ["咖喱鸡胸肉", "土豆胡萝卜"],
+      "staples": ["米饭", "土豆"],
+      "combination_pattern": "鸡肉根茎菜炖煮＋米饭",
+      "meal_types": ["午餐", "晚餐"]
+    },
+    {
+      "id": "beef-pepper-mushroom-rice",
+      "title": "牛肉青椒蘑菇炒饭",
+      "foods": ["牛肉", "青椒", "蘑菇", "米饭"],
+      "methods": ["炒饭"],
+      "dish_components": ["牛肉青椒蘑菇炒饭"],
+      "staples": ["米饭"],
+      "combination_pattern": "肉类蔬菜与米饭同炒",
+      "meal_types": ["午餐", "晚餐"]
+    },
+    {
+      "id": "chicken-zucchini-egg-rice",
+      "title": "鸡胸肉＋西葫芦炒鸡蛋＋米饭",
+      "foods": ["鸡胸肉", "西葫芦", "鸡蛋", "米饭"],
+      "methods": ["鸡肉熟制", "西葫芦炒鸡蛋"],
+      "dish_components": ["鸡胸肉", "西葫芦炒鸡蛋"],
+      "staples": ["米饭"],
+      "combination_pattern": "鸡肉单盘＋蔬菜炒蛋＋米饭",
+      "meal_types": ["午餐", "晚餐"]
+    },
+    {
+      "id": "beef-potato-mushroom-stew",
+      "title": "土豆蘑菇炖牛肉＋米饭",
+      "foods": ["牛肉", "土豆", "蘑菇", "米饭"],
+      "methods": ["炖煮"],
+      "dish_components": ["土豆蘑菇炖牛肉"],
+      "staples": ["米饭", "土豆"],
+      "combination_pattern": "肉类根茎菜菌菇炖菜＋米饭",
+      "meal_types": ["午餐", "晚餐"]
+    },
+    {
+      "id": "shrimp-egg-carrot-rice",
+      "title": "虾仁鸡蛋胡萝卜炒饭",
+      "foods": ["虾仁", "鸡蛋", "胡萝卜", "米饭"],
+      "methods": ["炒饭"],
+      "dish_components": ["虾仁鸡蛋胡萝卜炒饭"],
+      "staples": ["米饭"],
+      "combination_pattern": "虾仁鸡蛋蔬菜与米饭同炒",
+      "meal_types": ["午餐", "晚餐"]
+    },
+    {
+      "id": "salmon-lemon-greens-soup",
+      "title": "三文鱼柠檬叶菜汤锅＋米饭",
+      "foods": ["三文鱼", "柠檬", "叶菜", "米饭"],
+      "methods": ["汤锅炖煮"],
+      "dish_components": ["三文鱼柠檬叶菜汤锅"],
+      "staples": ["米饭"],
+      "combination_pattern": "鱼类叶菜带汤一锅菜＋米饭",
+      "meal_types": ["午餐", "晚餐"]
+    },
+    {
+      "id": "shrimp-egg-onion-noodles",
+      "title": "虾仁鸡蛋洋葱汤面",
+      "foods": ["虾仁", "鸡蛋", "洋葱", "面条"],
+      "methods": ["汤面煮制"],
+      "dish_components": ["虾仁鸡蛋洋葱汤面"],
+      "staples": ["面条"],
+      "combination_pattern": "虾仁鸡蛋蔬菜汤底＋面条",
+      "meal_types": ["早餐", "午餐", "晚餐"]
+    },
+    {
+      "id": "chicken-greens-shrimp-rice",
+      "title": "鸡胸肉＋油麦菜虾仁＋米饭",
+      "foods": ["鸡胸肉", "油麦菜", "虾仁", "米饭"],
+      "methods": ["鸡肉熟制", "叶菜虾仁炒制"],
+      "dish_components": ["鸡胸肉", "油麦菜虾仁"],
+      "staples": ["米饭"],
+      "combination_pattern": "鸡肉单盘＋叶菜虾仁＋米饭",
+      "meal_types": ["午餐", "晚餐"]
+    },
+    {
+      "id": "chicken-mushroom-noodle-soup",
+      "title": "鸡腿香菇胡萝卜汤面",
+      "foods": ["鸡腿", "香菇", "胡萝卜", "面条"],
+      "methods": ["汤面煮制"],
+      "dish_components": ["鸡腿香菇胡萝卜汤面"],
+      "staples": ["面条"],
+      "combination_pattern": "鸡肉菌菇蔬菜汤底＋面条",
+      "meal_types": ["午餐", "晚餐"]
+    },
+    {
+      "id": "chicken-leg-greens-rice",
+      "title": "鸡腿＋熟叶菜＋米饭",
+      "foods": ["鸡腿", "叶菜", "米饭"],
+      "methods": ["鸡肉熟制", "叶菜熟制"],
+      "dish_components": ["鸡腿", "熟叶菜"],
+      "staples": ["米饭"],
+      "combination_pattern": "鸡腿＋叶菜＋米饭",
+      "meal_types": ["午餐", "晚餐"]
+    },
+    {
+      "id": "salmon-vegetable-mushroom-soup",
+      "title": "三文鱼蔬菜菌菇汤锅＋米饭",
+      "foods": ["三文鱼", "胡萝卜", "洋葱", "菌菇", "柠檬", "米饭"],
+      "methods": ["汤锅炖煮"],
+      "dish_components": ["三文鱼蔬菜菌菇汤锅"],
+      "staples": ["米饭"],
+      "combination_pattern": "鱼类蔬菜菌菇带汤一锅菜＋米饭",
+      "meal_types": ["午餐", "晚餐"]
+    }
+  ]
+}

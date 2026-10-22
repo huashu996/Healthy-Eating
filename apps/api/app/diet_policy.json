@@ -1,0 +1,363 @@
+{
+  "schema_version": "1.0",
+  "policy_version": "diet-policy-v8",
+  "recent_days": 3,
+  "habit_windows_days": [
+    7,
+    14
+  ],
+  "day_boundary": {
+    "timezone": "Asia/Shanghai",
+    "hour": 7,
+    "time": "07:00",
+    "explicit_date_precedence": true,
+    "legacy_attribution": "preserve"
+  },
+  "quantification": {
+    "energy_tolerance_ratio": 0.05,
+    "min_energy_tolerance_kcal": 100,
+    "protein_tolerance_g": 5,
+    "fat_tolerance_g": 5,
+    "carbs_tolerance_g": 15,
+    "max_portion_scale": 1.5
+  },
+  "rules": [
+    {
+      "id": "diet_day_boundary",
+      "title": "北京时间07:00换饮食日",
+      "description": "原消息接收时间在07:00前归前一天；明确日期优先，原餐修正与旧记录保持原归属，真实时间不改写。",
+      "status": "active",
+      "implementation": "software"
+    },
+    {
+      "id": "morning_menu_publication",
+      "title": "全天存信息，07:00统一生成一次正式菜单",
+      "description": "全天保存用户信息、近三日营养、训练、库存和点菜；默认不提前制作、不因新信息或漏餐反复生成。每天北京时间07:00才读取最新上下文生成当日正式菜单，同日成功结果幂等复用。显式测试标test_preview且不能升格或复用为正式。技术延迟保留真实时间；每日评分与建议同在07:00更新，只结算上一完整饮食日；晚间仅记录摄入和上下文，不提前评分。资料不足保留无法评分。只有新明确要求现在重做才用独立剩余饮食入口。",
+      "status": "active",
+      "implementation": "software_and_manual_agent"
+    },
+    {
+      "id": "recent_three_days",
+      "title": "近期结构看前3个饮食日",
+      "description": "使用目标日前3日已记录营养范围、覆盖率和各日已存参考；缺天或营养不齐不能判摄入过少，当前新目标不回填历史。",
+      "status": "active",
+      "implementation": "software"
+    },
+    {
+      "id": "habit_windows",
+      "title": "熟悉搭配看7/14日",
+      "description": "习惯观察与三日结构摘要分开；频次不是喜欢，未记录不是没吃，不为每天不同而强行换菜。",
+      "status": "active",
+      "implementation": "software"
+    },
+    {
+      "id": "separate_taste_nutrition_intake",
+      "title": "选菜库、营养库与摄入事实分开",
+      "description": "taste逻辑库保存菜式、做法和组合来源；nutrition标签库保存品牌、别名、单位、数值及版本。选菜读taste，份量核算优先匹配标签、再用可靠食物成分。参考图和通用seed不是已吃记录或已确认喜好，不自动进入摄入事实。 新taste资料保留可独立恢复的结构化索引，不额外复制参考图；原已存照片与营养标签原图来源保留，不删除。",
+      "status": "active",
+      "implementation": "software"
+    },
+    {
+      "id": "label_priority",
+      "title": "明确标签与确认份量优先",
+      "description": "食品身份、品牌版本、营养标签与已确认实际份量可追溯；未知份量或营养保留未知，不猜作精确值。",
+      "status": "active",
+      "implementation": "software"
+    },
+    {
+      "id": "reference_not_consumption",
+      "title": "参考图不自动记餐",
+      "description": "参考图、商品标签、未吃计划仅提供背景；仅有明确进食证据才创建摄入记录。主聊天负责识别意图，软件统计排除计划和参考标记。",
+      "status": "active",
+      "implementation": "software_and_manual_agent"
+    },
+    {
+      "id": "unknown_not_skipped",
+      "title": "未知不判漏餐",
+      "description": "没有早餐记录不能认定没吃早餐；pending保留已记录估算但不当作确认完整全天，未知不填零。",
+      "status": "active",
+      "implementation": "software"
+    },
+    {
+      "id": "dated_training_plan",
+      "title": "训练状态按目标日期确认",
+      "description": "训练日、休息日与待定分别保存来源；明日状态不套今日，计划不等于已训练，未知时先确认。",
+      "status": "active",
+      "implementation": "software_and_manual_agent"
+    },
+    {
+      "id": "minimal_questions",
+      "title": "已知信息复用，只问关键问题",
+      "description": "直接复用已知偏好，方案可主动给建议份量并标记为计划而非摄入事实；只在安全、目标日训练状态或严重产品歧义时询问，不为容量等次要缺值卡住方案，不重复问已答问题。",
+      "status": "active",
+      "implementation": "software_and_manual_agent"
+    },
+    {
+      "id": "single_value_estimate",
+      "title": "单值展示仍保留估算依据",
+      "description": "页面单值须注明估算，底层范围、份量、产品来源和缺失状态仍保留；缺失不能显示成零。",
+      "status": "active",
+      "implementation": "software"
+    },
+    {
+      "id": "portion_quantification",
+      "title": "候选餐份量与营养一致校验",
+      "description": "按可追溯每份或每百克数据计算菜品贡献，使用配置中的目标容差与份量缩放上限；预算不能冒充菜品营养。",
+      "status": "active",
+      "implementation": "software"
+    },
+    {
+      "id": "no_cross_day_debt",
+      "title": "不跨日追补或抵扣",
+      "description": "不把记录缺口当欠账，不因前日偏多跳餐；按当前日资料和已确认训练安排做结构调整。",
+      "status": "active",
+      "implementation": "software"
+    },
+    {
+      "id": "source_traceability",
+      "title": "规则、来源与版本可查",
+      "description": "保留餐食与分析版本、产品及标签来源、目标日期和策略版本hash；评分是产品参考，不是医学诊断。",
+      "status": "active",
+      "implementation": "software"
+    },
+    {
+      "id": "candidate_and_independent_review",
+      "title": "候选与独立核验分步",
+      "description": "由主聊天代理提供结构化候选，并安排独立核验；本地软件校验输入和数值。当前软件本身不自动调用外部模型，也不保证无人值守代理可用。",
+      "status": "proposal",
+      "implementation": "manual_agent_integration_required"
+    },
+    {
+      "id": "dated_dish_requests",
+      "title": "目标日点菜优先习惯候选",
+      "description": "点菜按目标饮食日与来源版本保存，不是已吃或永久喜好；生成器不支持时待审核，结构化候选必须逐项对应请求再核算。",
+      "status": "active",
+      "implementation": "software_and_manual_agent"
+    },
+    {
+      "id": "structured_candidate_writeback",
+      "title": "上下文、候选、核验、版本化发布",
+      "description": "每次导出Skill与实际资料；候选绑定规则、上下文和摄入快照，按固定标签或可靠成分版本逐项校验，保留旧方案。软件自身不调用新模型。",
+      "status": "active",
+      "implementation": "software_and_manual_agent"
+    },
+    {
+      "id": "dynamic_baseline",
+      "title": "动态基线调整尚不应用",
+      "description": "当前缺完整饮食、可比体重趋势及训练恢复反馈，保持起始目标；不跨日追补热量或蛋白质。",
+      "status": "insufficient_data",
+      "implementation": "software"
+    },
+    {
+      "id": "fortnightly_target_review",
+      "title": "每日总目标每15天复核",
+      "description": "已有07流程到期时由dot复核两周体重均值、完整实际摄入和近期体脂；不足保留，单日波动不调量。变化仅100–150 kcal，保护个体蛋白脂肪和累计缺口，版本化保留原因与证据。",
+      "status": "active",
+      "implementation": "software_and_manual_agent"
+    },
+    {
+      "id": "scientific_rationale",
+      "title": "菜式对应的科学饮食依据",
+      "description": "由dot依SKILL与docs/diet-rationale.md核查食物—营养—用途—个体依据及权威来源。微量营养未知不宣称达标或缺乏，食鱼和鱼油补剂不混同，已有多维不重复叠加。解释修订只改说明并保留审计，不重算菜单或评分。",
+      "status": "active",
+      "implementation": "software_and_manual_agent"
+    },
+    {
+      "id": "recent_menu_rotation",
+      "title": "主菜优先轮换，重复须有具体理由",
+      "description": "生成和换菜均读取前三个饮食日真实已吃主食材及菜式，另看前三日已发布建议以避免重复整套菜单。实际摄入优先；建议不当摄入。各可执行分支重复项均须逐项说明选择依据，遗漏或上下文变化拒绝发布；不硬禁米饭、咖啡、奶及乳清等基础项。",
+      "status": "active",
+      "implementation": "software_and_manual_agent"
+    },
+    {
+      "id": "explicit_same_day_dish_revision",
+      "title": "用户明确换菜后整套复核",
+      "description": "只在用户明确要求时修订当天同一正式报告；CAS、幂等、完整旧菜单审计、全部分支来源和营养及近期重复复核。保留原生成时间、实际摄入、历史评分和目标；不生成第二正式菜单。",
+      "status": "active",
+      "implementation": "software_and_manual_agent"
+    },
+    {
+      "id": "adopted_personal_estimate",
+      "title": "个人选用估算保留真实来源",
+      "description": "仅对已确认专项个人选用、固定产品与版本、明确自做生重范围和来源的user_report开放估算使用；不改为标签或官方来源，缺少选用依据或限制说明拒绝。",
+      "status": "active",
+      "implementation": "software_and_manual_agent"
+    },
+    {
+      "id": "daily_estimated_scoring",
+      "title": "估算跨档直接按中点评分",
+      "description": "用户要求日常按已记录餐食与合理估算单值直接评分，不因范围跨档每日询问；特殊情况次日主动说明后审计更正。保留范围和来源，展示估算标记；不改阈值权重，不虚构无记录日，不跳过其他证据保护。",
+      "status": "active",
+      "implementation": "software"
+    }
+  ],
+  "execution": {
+    "external_model_calls": false,
+    "new_providers_allowed": false,
+    "scheduler_enabled": false,
+    "manual_agent_steps": [
+      "全天主动收到的信息先保存，不调用菜单生成。仅现有07:00流程读取最新完整上下文生成当日正式菜单；用户本次明确测试才可生成test_preview，不能复用为翌日正式。",
+      "识别用户是在记录已吃餐食、补充原餐，还是提供参考资料；不明确时先确认。",
+      "询问目标日期的训练或休息状态；已经明确时不重复问，未确认时保持unknown。",
+      "在现有授权主聊天环境读取私有结构化上下文并形成候选，不把私人健康资料发送给新外部服务。",
+      "独立代理核验需运行环境确实支持并取得结果；软件校验通过不等于已完成独立模型核验。"
+    ],
+    "question_policy": {
+      "reuse_known_preferences": true,
+      "propose_portions_for_plans": true,
+      "question_reasons": [
+        "safety",
+        "target_day_training_status",
+        "material_product_identity"
+      ],
+      "minor_detail_gaps_block_plan": false,
+      "repeat_answered_questions": false
+    }
+  },
+  "portability": {
+    "software_rules_separate_from_personal_data": true,
+    "skill_path": "SKILL.md",
+    "personal_data_roots": [
+      "data/"
+    ],
+    "new_account_gets_private_history": false,
+    "public_export_or_publish_authorized": false
+  },
+  "logical_stores": {
+    "taste": {
+      "purpose": "选择菜式、做法、主食搭配与组合",
+      "readers": [
+        "diet_reference.collect",
+        "diet_history.summarize",
+        "diet_history.confirmed_likes",
+        "diet_seed.collect"
+      ],
+      "sources": [
+        "explicit_preferences",
+        "current_actual_meal_references",
+        "private_reference_materials",
+        "optional_generic_seed"
+      ],
+      "reference_is_preference": false,
+      "reference_is_consumption": false,
+      "seed_is_personal_history": false,
+      "new_reference_storage": "structured_index_only",
+      "copy_additional_reference_images": false,
+      "existing_reference_images": "preserve",
+      "selection_restores_from_structured_index": true
+    },
+    "nutrition": {
+      "purpose": "份量核算和营养来源追溯",
+      "readers": [
+        "food_catalog",
+        "diet_quantified.personal_product",
+        "diet_quantified.reference"
+      ],
+      "fields": [
+        "brand",
+        "aliases",
+        "basis",
+        "units",
+        "label_values",
+        "source",
+        "version"
+      ],
+      "precedence": [
+        "matching_confirmed_product_label",
+        "verified_composition_reference",
+        "explicit_uncertain_estimate"
+      ],
+      "unknown_values_are_zero": false,
+      "original_label_image_provenance": "preserve"
+    },
+    "intake": {
+      "purpose": "实际已吃事实与当前版本分析",
+      "records": [
+        "meals",
+        "meal_analysis_reports"
+      ],
+      "reference_views_create_intake": false,
+      "plans_create_intake": false
+    }
+  },
+  "publication": {
+    "timezone": "Asia/Shanghai",
+    "formal_time": "07:00",
+    "formal_success_limit_per_date": 1,
+    "before_formal_time": "collect_and_save_context_only",
+    "ordinary_context_changes": "save_only",
+    "skipped_meal_changes": "save_only",
+    "formal_uses_latest_context": true,
+    "test_preview_promoted_to_formal": false,
+    "late_scheduler_recovery": "same_date_after_0700_actual_timestamp",
+    "explicit_remaining_recalculation": "requires_new_explicit_user_request",
+    "evening_settlement": "intake_and_context_only",
+    "scoring": {
+      "time": "07:00",
+      "timezone": "Asia/Shanghai",
+      "diet_day": "07:00_to_next_07:00",
+      "scope": "previous_completed_diet_day_only",
+      "ordinary_changes": "save_only",
+      "preview_scores": false,
+      "score_only_bypass": false,
+      "insufficient_evidence": "null_with_reasons"
+    }
+  },
+  "target_review": {
+    "version": "fortnightly-target-review-v1",
+    "interval_days": 15,
+    "timezone": "Asia/Shanghai",
+    "time": "07:00",
+    "execution": "manual_local_review",
+    "external_model_calls": false,
+    "missing_data": "hold_and_record_gaps",
+    "desired_loss_kg_per_week": [
+      0.3,
+      0.5
+    ],
+    "max_change_kcal": 150,
+    "threshold_status": "conservative_software_heuristics_not_clinically_validated"
+  },
+  "scoring_evidence": {
+    "version": "diet-quality-v7-target-bands",
+    "diary_completeness": "user_attested_all_sent_records",
+    "unreported_food_groups": "zero_if_day_has_actual_meals_and_no_observed_food",
+    "observed_unweighed_foods": "operator_photo_portion_estimation_required_no_penalty",
+    "denominator": 100,
+    "normalization": false,
+    "empty_day": "unrecorded_not_fasting",
+    "macro_weights": {
+      "energy": 25,
+      "protein": 20,
+      "fat": 15,
+      "carbs": 10
+    },
+    "full_target_ratio": [
+      0.9,
+      1.1
+    ],
+    "partial_target_ratio": [
+      0.75,
+      1.3
+    ],
+    "partial_points_fraction": 0.6,
+    "boundaries": "inclusive",
+    "score_purpose": "personal_target_adherence_and_food_structure_not_medical_risk",
+    "historical_policy": "preserve_complete_v6_snapshot_score_weights_and_explanation_no_recalculation"
+  },
+  "daily_estimated_scoring": {
+    "enabled": true,
+    "reason": "用户要求日常按已记录餐食与合理估算单值直接评分，不因范围跨档每日询问；特殊情况次日主动说明后审计更正。",
+    "method": "v7-recorded-midpoint-v1",
+    "confirmation_required": false,
+    "partial_reported_food_group": {
+      "method": "v7-partial-food-score-interval-midpoint-v1",
+      "maximum_missing_groups": 1,
+      "known_eligible_food_amount_required": true,
+      "unknown_intake": "preserve_unknown_never_impute_grams",
+      "score_interval": "known_eligible_lower_bound_to_existing_component_maximum",
+      "display": "score_interval_midpoint_conditional_on_macro_midpoints",
+      "formal_evidence": "unchanged"
+    }
+  }
+}
