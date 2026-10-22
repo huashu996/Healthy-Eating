@@ -2,7 +2,7 @@
 
 [简体中文](README.md) · [Project operating contract](SKILL.md)
 
-A local-first food diary, nutrition-estimation, and history viewer built with FastAPI, SQLite, and React. This repository is an **empty software template**: it contains no personal profile, actual food diary, weight history, private images, personal targets, account credentials, or hosted deployment.
+A local-first food diary, nutrition-estimation, and history viewer built with FastAPI, SQLite, and React. The application starts with **empty user data**: no personal database, meal or weight records, personal targets, account credentials, or hosted deployment are bundled. A real dashboard screenshot below was explicitly authorized for public display by its owner; it is documentation only, not default data imported on installation.
 
 The interface is primarily Chinese; this English README does not imply a fully translated UI.
 
@@ -15,6 +15,12 @@ The interface is primarily Chinese; this English README does not imply a fully t
 - No preinstalled daily job. A configured 07:00 time is a policy boundary, not a scheduled task.
 - An empty/unrecorded day means missing evidence, not zero intake, skipped meals, or fasting.
 - This is a personal recordkeeping tool, not medical diagnosis or a prescription. Estimates, targets, and scores are not precise measurements or clinical conclusions.
+
+## Main dashboard example
+
+The screenshot below shows the nutrition dashboard for the **2026-10-22 diet day**, with the owner’s explicit permission to publish the real recorded intake and displayed targets. The displayed intake is estimated from actual recorded meals, captured before the next 07:00 formal settlement. It is a UI example, not dietary advice for other people, and its data is not imported into the application database. The ring percentages show progress against this example’s personal nutrient targets, not a daily health score; these targets are not application defaults. Diet days use the Asia/Shanghai 07:00 boundary.
+
+![Owner-authorized nutrition dashboard for the 2026-10-22 diet day](docs/images/dashboard-example-2026-10-22.jpg)
 
 ## Empty history view
 

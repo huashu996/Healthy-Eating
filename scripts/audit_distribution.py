@@ -15,6 +15,7 @@ def main():
   if any(x in SKIP for x in rel.parts) or p.name.endswith('.tsbuildinfo'):continue
   if not p.is_file():continue
   count+=1
+  if rel.as_posix()=="docs/images/dashboard-example-2026-10-22.jpg" and not p.is_symlink() and hashlib.sha256(p.read_bytes()).hexdigest()=="883a267573b4c5c16718c3fefd0f51532b7d8122162d3f807aa404f95e8cd563":continue
   if rel.as_posix()=="docs/images/history-empty.jpg" and not p.is_symlink() and hashlib.sha256(p.read_bytes()).hexdigest()=="f9591652375950b43a2583045bcd03e654b4956ffc28515963a275b674c95d7a":continue
   if p.is_symlink() or rel.parts[0]=='data' or p.suffix.lower() in BAD or p.name in {'.env','RUNBOOK.md','RECOVERY_MANIFEST.json'}:errors.append(str(rel)+': forbidden artifact');continue
   try:s=p.read_text()
