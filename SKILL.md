@@ -51,6 +51,10 @@ No internal scheduler runs these steps. An external integration must be separate
 
 Use the current policy's fixed 100-point denominator and preserve its weights and evidence checks. Do not normalize missing components into a perfect score. Display colors are green at 85 or above, yellow at 70 or above, and red below 70; unavailable scores remain unavailable.
 
+For diet dates from 2026-10-23 (Asia/Shanghai), apply `diet-quality-v8-continuous-tolerance`: energy/protein/fat/carbohydrate weights are 25/20/15/15; vegetable/fruit/whole-grain-and-mixed-bean weights are 10/10/5. For each macro/energy component let d = abs(intake / target - 1): d <= 0.05 earns full points, 0.05 < d < 0.40 decreases linearly, and d >= 0.40 earns zero. Food-group points are proportional to intake against 300g raw edible vegetables, 200g edible fruit, and 50g dry whole grains/mixed beans, capped at the component maximum without an excess penalty. Add all seven components without dropping dimensions or renormalization; subtract 1 point per 3g pure alcohol up to 30 points, flooring the total at zero. v8 has no additional 79-point cap. Preserve calculation precision until display/final rounding and the existing evidence/applicability safeguards. See `docs/diet-quality-scoring.md` for exact formulas.
+
+Do not rewrite saved v6/v7 scores, component weights, explanations, or versioned estimates on upgrade. The effective-date rule does not grant permission to recalculate personal history. This public workflow includes no personal historical-override authorization. Any separately requested correction must preserve appropriate versioning and audit evidence.
+
 Preserve estimate labels, ranges, source references, and the policy version. Never create an empty day's score merely to fill a chart. Scores describe target adherence and food structure, not medical risk, diagnosis, or treatment eligibility.
 
 ## 7. Protect private storage and verify changes

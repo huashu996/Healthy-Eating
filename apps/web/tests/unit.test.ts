@@ -326,6 +326,11 @@ describe('chronological actual meal display', () => {
 import { ScoreSummary } from '../src/ScoreSummary';
 describe('versioned score arithmetic', () => {
   const parts=[{key:'energy',name:'热量目标',points:25,maximum:25},{key:'protein',name:'蛋白质目标',points:20,maximum:20},{key:'fat',name:'脂肪目标',points:15,maximum:15},{key:'carbs',name:'碳水目标',points:0,maximum:10},{key:'vegetables',name:'蔬菜',points:10,maximum:10},{key:'fruit',name:'水果',points:10,maximum:10},{key:'wholegrain',name:'全谷',points:10,maximum:10}];
+  it('explains v8 fixed weights, linear tolerance and no legacy 79 cap', () => {
+    const html = renderToStaticMarkup(createElement(ScoreSummary, { data: {score: 79, score_version: 'diet-quality-v8-continuous-tolerance', components: parts.map(p => p.key === 'carbs' ? {...p, maximum: 15} : p.key === 'wholegrain' ? {...p, points: 5, maximum: 5} : p), score_limitations: ['legacy 79 note must not reactivate cap']} }));
+    for (const phrase of ['热量目标25分', '蛋白质目标20分', '脂肪目标15分', '碳水目标15分', '蔬菜10分', '水果10分', '全谷5分', '上下偏差5%内满分', '偏差40%及以上为0分', '固定100分，不归一、不另设79分封顶', '未称重本身不扣分']) expect(html).toContain(phrase);
+    expect(html).not.toContain('按明显偏离目标规则封顶为');
+  });
   it('explains stored 79 cap instead of pretending 90 rounds to 79', () => {
     const html=renderToStaticMarkup(createElement(ScoreSummary,{data:{score:79,components:parts,score_limitations:['明显偏离目标，最高限制为79']}}));
     expect(html).toContain('按明显偏离目标规则封顶为');

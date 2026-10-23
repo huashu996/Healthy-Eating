@@ -37,11 +37,17 @@ def health_state():
     return values, sources, checkins
 
 
-def day_score(totals, target, meals, analyzed, finished, *, context=None, quality=None):
-    return diet_scoring.score(totals, target, meals, analyzed, finished, context=context, quality=quality)
+def day_score(totals, target, meals, analyzed, finished, *, context=None, quality=None, diet_date=None, score_version_override=None):
+    # Only the explicit audited correction entry point supplies an override.
+    return diet_scoring.score(totals, target, meals, analyzed, finished, context=context, quality=quality,
+                              diet_date=None if score_version_override else diet_date, version=score_version_override)
 
 
-def review_days(start, end, reports, meals, current_target, calculate=True, timezone=None, day_logs=None):
+def review_days(start, end, reports, meals, current_target, calculate=True, timezone=None, day_logs=None,
+                score_version_override=None, scoring_reference_override=None):
+    if score_version_override is not None and (score_version_override != diet_scoring.VERSION
+            or start != end or not calculate or not isinstance(scoring_reference_override, dict)):
+        raise ValueError("Score version overrides require one explicit correction and frozen reference")
     # A past day's target comes from its saved analysis, never today's new body weight.
     from .diet import current_analysis
     zone = ZoneInfo(timezone or db.settings()["timezone"])
@@ -64,6 +70,8 @@ def review_days(start, end, reports, meals, current_target, calculate=True, time
         explicit = diet_targets.selected(day)
         if explicit:
             saved_reference = diet_targets.apply({}, explicit)
+        if scoring_reference_override is not None:
+            saved_reference = scoring_reference_override
         analyzed, reference = 0, saved_reference.get("daily") if saved_reference else None
         analysis_refs, quality_entries = [], []
         for meal in rows:
@@ -93,6 +101,8 @@ def review_days(start, end, reports, meals, current_target, calculate=True, time
                      "input_refs": sorted([{"id": r["id"], "version": r["version"]} for r in [*rows, *([log] if log else [])]], key=lambda r: r["id"]),
                      "analysis_refs": sorted(analysis_refs, key=lambda r: r["id"]),
                      **(day_score(totals, reference, len(rows), analyzed, finished,
+                                  diet_date=day.isoformat(),
+                                  score_version_override=score_version_override,
                                   context=(saved_reference or {}).get("scoring_context"),
                                   quality=diet_scoring.aggregate_quality(quality_entries)) if calculate else
                         {"score": None, "state": "待早上结算", "components": [], "score_version": SCORE_VERSION})})

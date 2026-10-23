@@ -49,6 +49,24 @@ def get_policy() -> dict:
             "ordinary_changes": "save_only", "preview_scores": False,
             "score_only_bypass": False, "insufficient_evidence": "null_with_reasons"}:
         raise ValueError("Diet scoring must remain in the once-daily morning workflow")
+    scoring = result.get("scoring_evidence", {})
+    required_scoring = {
+        "version": "diet-quality-v8-continuous-tolerance", "previous_version": "diet-quality-v7-target-bands",
+        "effective_diet_date": "2026-10-23", "effective_timezone": "Asia/Shanghai",
+        "macro_weights": {"energy": 25, "protein": 20, "fat": 15, "carbs": 15},
+        "full_target_ratio": [.95, 1.05], "zero_target_ratio": [.6, 1.4],
+        "full_deviation": .05, "zero_deviation": .40,
+        "macro_formula": "weight * max(0, min(1, (0.40 - abs(intake / target - 1)) / 0.35))",
+        "food_group_formula": "maximum * max(0, min(1, intake / reference))",
+        "food_group_weights": {"vegetables_raw_edible_g": 10, "fruit_edible_g": 10, "whole_grains_mixed_beans_dry_g": 5},
+        "food_group_references_g": {"vegetables_raw_edible_g": 300, "fruit_edible_g": 200, "whole_grains_mixed_beans_dry_g": 50},
+        "food_group_full_ratio": 1, "food_group_zero_ratio": 0,
+        "food_group_excess_penalty": False, "reference_recommendations_unchanged": True,
+        "denominator": 100, "normalization": False, "severe_domain_cap": None,
+        "component_rounding": "display_only",
+    }
+    if any(key not in scoring or scoring[key] != value for key, value in required_scoring.items()):
+        raise ValueError("Unsupported dated continuous scoring policy")
     result["policy_hash"] = hashlib.sha256(raw).hexdigest()
     result["skill_hash"] = hashlib.sha256(skill).hexdigest()
     result["hash_algorithm"] = "sha256"

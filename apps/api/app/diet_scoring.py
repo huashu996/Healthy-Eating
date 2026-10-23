@@ -5,10 +5,13 @@ User-attested complete diaries retain all 100 points; photo estimates are not pe
 """
 from math import isfinite, isclose
 from decimal import Decimal
+from copy import deepcopy
+from datetime import date, datetime
 
-VERSION = "diet-quality-v7-target-bands"
+VERSION = "diet-quality-v8-continuous-tolerance"
+V7_VERSION = "diet-quality-v7-target-bands"
 LEGACY_VERSION = "diet-quality-v6-alcohol-dose"
-METHOD = ("饮食目标执行与结构参考（固定100分）：热量25、蛋白质20、脂肪15、碳水10、蔬菜/水果/全谷杂豆各10。"
+V7_METHOD = ("饮食目标执行与结构参考（固定100分）：热量25、蛋白质20、脂肪15、碳水10、蔬菜/水果/全谷杂豆各10。"
           "四项营养均与该日目标比较：90%–110%（含边界）满分，其余75%–130%（含边界）得该项60%，之外0分。"
           "按用户完整记录约定，未出现的食物类别按未吃计；照片中可见食物由AI结合叙述估量，未称重不扣分。"
           "七项直接相加，再按纯酒精每3克扣1分、最高扣30分；不剔除维度、不归一。"
@@ -32,7 +35,7 @@ SOURCES = [
     {"id": "nih-supplements", "title": "NIH ODS：膳食补充剂", "url": "https://ods.od.nih.gov/factsheets/WYNTK-Consumer/",
      "summary": "补充剂不能代替多样的完整食物；营养标签可计入宏量营养，但不能补作蔬果全谷的食物份量。"},
 ]
-RULES = {
+V7_RULES = {
     "energy": {"maximum": 25, "full_reference_ratio": [0.90, 1.10], "partial_reference_ratio": [0.75, 1.30], "partial_points": 15},
     "protein": {"maximum": 20, "full_reference_ratio": [0.90, 1.10], "partial_reference_ratio": [0.75, 1.30], "partial_points": 12,
                 "training_reference_g_per_kg": [1.2, 2.0], "general_reference_g_per_kg": [0.8, 2.0], "max_energy_fraction": 0.35},
@@ -55,6 +58,73 @@ RULES = {
     "known_quality_review": "有完整证据时，天然纤维低于25克、饱和脂肪超过10%供能或钠超过2000毫克，则暂停综合分并列出参考提示；不是疾病判断。",
     "notice": "四项目标分档、权重、明显偏离封顶是用户选择的软件规则，不是指南给出的评分公式或医学安全界线；热量不冒充实测消耗。",
 }
+RULES = deepcopy(V7_RULES)
+RULES["carbs"]["maximum"] = 15
+for _key in ("energy", "protein", "fat", "carbs"):
+    RULES[_key].update(full_reference_ratio=[.95, 1.05], zero_reference_ratio=[.60, 1.40],
+                       full_deviation=.05, zero_deviation=.40,
+                       formula="maximum * max(0, min(1, (0.40 - abs(intake / target - 1)) / 0.35))")
+    del RULES[_key]["partial_reference_ratio"]
+    del RULES[_key]["partial_points"]
+del RULES["severe_domain_cap"]
+RULES["rounding"] = "retain component precision; round only display values and final integer total"
+RULES["structure"].update(full_reference_ratio=1, zero_reference_ratio=0,
+                          formula="maximum * max(0, min(1, intake / reference))",
+                          maxima={"vegetables_raw_edible_g": 10, "fruit_edible_g": 10, "whole_grains_mixed_beans_dry_g": 5},
+                          excess_penalty=False, component_decimals="display_only")
+del RULES["structure"]["each_maximum"]
+RULES["uncertainty"] = "营养区间跨零分边界或原适用性复核边界时保留复核；合格估算层按该版本中点连续计分。"
+RULES["notice"] = "目标容差、连续扣分及权重是用户选择的软件规则，不是医学安全界线；无79分额外封顶。"
+METHOD = ("饮食目标执行与结构参考（固定100分）：热量25、蛋白质20、脂肪15、碳水15、蔬菜10、水果10、全谷杂豆5。"
+          "四项营养偏离该日目标不超过5%满分；超过5%后连续线性扣分，偏差达到40%该项0分。"
+          "蔬菜/水果/全谷杂豆保留300/200/50克推荐参考，少多少比例就扣该项多少比例，吃够或超过满分，没吃0分。"
+          "七项直接相加，再按纯酒精每3克扣1分、最高扣30分；不剔除维度、不归一、不另设79分封顶。"
+          "未称重不扣分；原适用性和资料保护保留。软件启发式参考，不是临床验证的健康指数。")
+
+
+def rules_for_version(version):
+    if version == VERSION:
+        return RULES
+    if version == V7_VERSION:
+        return V7_RULES
+    raise ValueError("Unsupported scoring calculation version")
+
+
+def version_for_date(diet_date):
+    """Select by diet date, never run time; saved readback uses its own version."""
+    from . import diet_policy
+    selected = date.fromisoformat(str(diet_date))
+    policy = diet_policy.get_policy()["scoring_evidence"]
+    if policy["version"] == V7_VERSION:
+        return V7_VERSION
+    if policy["version"] != VERSION:
+        raise ValueError("Unsupported scoring policy version")
+    effective = date.fromisoformat(policy["effective_diet_date"])
+    return VERSION if selected >= effective else V7_VERSION
+
+
+def food_maximum(key, *, version=VERSION):
+    rules = rules_for_version(version)["structure"]
+    return rules["each_maximum"] if version == V7_VERSION else rules["maxima"][key]
+
+
+def food_points(intake, key, *, version=VERSION):
+    rules = rules_for_version(version)
+    reference = rules["structure"][key]
+    if version == V7_VERSION:
+        return round(min(10, 10 * intake / reference), 1)
+    ratio = max(Decimal(0), min(Decimal(1), Decimal(str(intake)) / Decimal(str(reference))))
+    return float(Decimal(food_maximum(key, version=version)) * ratio)
+
+
+def continuous_points(deviation, maximum):
+    # Decimal boundaries avoid introducing a second, display-rounded threshold.
+    for boundary in (Decimal(".05"), Decimal(".40")):
+        if isclose(float(deviation), float(boundary), rel_tol=1e-12, abs_tol=1e-12):
+            deviation = boundary
+    factor = max(Decimal(0), min(Decimal(1), (Decimal(".40") - deviation) / Decimal(".35")))
+    return float(Decimal(maximum) * factor)
+
 MACROS = ("kcal", "protein_g", "fat_g", "carbs_g")
 CORE_FOODS = ("vegetables_raw_edible_g", "fruit_edible_g", "whole_grains_mixed_beans_dry_g")
 OPTIONAL = ("fiber_g", "saturated_fat_g", "sodium_mg")
@@ -63,7 +133,7 @@ TARGET_PARTS = (("energy", "kcal", "热量目标", "kcal"), ("protein", "protein
                 ("fat", "fat_g", "脂肪目标", "g"), ("carbs", "carbs_g", "碳水目标", "g"))
 
 
-def target_points(amount, target, key):
+def target_points(amount, target, key, *, version=VERSION):
     """Inclusive decimal bands, with only machine-scale summation noise snapped.
 
     Meal totals are floats upstream. The 1e-12 relative/1e-9 absolute tolerance
@@ -71,7 +141,9 @@ def target_points(amount, target, key):
     It is not an additional nutritional tolerance or display rounding.
     """
     value, reference = Decimal(str(amount)), Decimal(str(target))
-    rule = RULES[key]
+    rule = rules_for_version(version)[key]
+    if version == VERSION:
+        return continuous_points(abs(value / reference - 1), rule["maximum"])
     low, high = (Decimal(str(v)) * reference for v in rule["full_reference_ratio"])
     partial_low, partial_high = (Decimal(str(v)) * reference for v in rule["partial_reference_ratio"])
     def within(lower, upper):
@@ -86,7 +158,7 @@ def saved_version_supported(snapshot):
     A version label alone cannot pass a legacy record as a usable snapshot.
     Meal/analysis identity and readiness validation remain with the read models.
     """
-    if snapshot.get("score_version") == VERSION:
+    if snapshot.get("score_version") in (VERSION, V7_VERSION):
         return True
     if (snapshot.get("score_version") != LEGACY_VERSION or not isinstance(snapshot.get("score_method"), str)
             or not snapshot["score_method"].strip()):
@@ -121,6 +193,25 @@ def saved_version_supported(snapshot):
     actual = {p.get("key"): p.get("maximum") for p in parts if p.get("maximum", 0) > 0}
     return (actual == expected and len([p for p in parts if p.get("maximum", 0) > 0]) == len(expected)
             and snapshot.get("score_maximum") == 100 and snapshot.get("score_scope") == "recorded_full")
+
+
+def historical_override_supported(snapshot):
+    """Project only a non-sensitive marker after checking source correction audit."""
+    audit = snapshot.get("score_policy_override")
+    if (snapshot.get("score_version") != VERSION or not isinstance(audit, dict)
+            or audit.get("kind") != "explicit_historical_revision" or audit.get("score_version") != VERSION
+            or audit.get("previous_score_version") not in (VERSION, V7_VERSION, LEGACY_VERSION)
+            or not isinstance(audit.get("source_id"), str) or not audit["source_id"].strip()
+            or not isinstance(audit.get("reason"), str) or len(audit["reason"].strip()) < 10
+            or audit.get("original_target") != snapshot.get("target")
+            or audit.get("original_context") != snapshot.get("score_context")
+            or not isinstance(snapshot.get("target"), dict)
+            or any(not number(snapshot["target"].get(k), positive=True) for k in MACROS)):
+        return False
+    try:
+        return datetime.fromisoformat(audit["created_at"].replace("Z", "+00:00")).utcoffset() is not None
+    except (KeyError, ValueError, TypeError, AttributeError):
+        return False
 
 
 def number(value, *, positive=False):
@@ -247,7 +338,14 @@ def aggregate_quality(entries):
             "distinct_foods": sorted(distinct_foods) if all_diversity_known else None}
 
 
-def score(totals, target, meals, analyzed, finished, *, context=None, quality=None):
+def score(totals, target, meals, analyzed, finished, *, context=None, quality=None, version=None, diet_date=None):
+    selected = version_for_date(diet_date) if diet_date is not None else VERSION
+    if version is not None:
+        if diet_date is not None and version != selected:
+            raise ValueError("Scoring version does not match the diet date policy")
+        selected = version
+    rules = rules_for_version(selected)
+    legacy = selected == V7_VERSION
     context, quality = context or {}, quality or {}
     parts, missing, food_missing, limits = [], [], [], [
         "单日估算只反映已记录饮食的部分合理性，不能诊断营养缺乏、疾病或长期健康。",
@@ -255,8 +353,8 @@ def score(totals, target, meals, analyzed, finished, *, context=None, quality=No
         "分数不包含全部微量营养素、食物安全和个人疾病管理。",
         "酒精原已计入餐食能量，本评分不重复加热量。按纯酒精量递增扣分是软件权重，不是医学风险换算；少量也非无风险，扣分封顶不表示健康风险封顶。",
     ]
-    result = {"score": None, "score_maximum": None, "score_coverage_pct": 0, "score_scope": "unavailable", "components": parts, "score_version": VERSION, "score_method": METHOD,
-              "score_evidence_sources": [dict(s) for s in SOURCES], "score_rules": RULES,
+    result = {"score": None, "score_maximum": None, "score_coverage_pct": 0, "score_scope": "unavailable", "components": parts, "score_version": selected, "score_method": V7_METHOD if legacy else METHOD,
+              "score_evidence_sources": [dict(s) for s in SOURCES], "score_rules": deepcopy(rules),
               "score_limitations": limits, "score_readiness": {"status": "insufficient_data", "missing": missing},
               "score_quality_evidence": quality, "score_context": dict(context)}
 
@@ -301,14 +399,16 @@ def score(totals, target, meals, analyzed, finished, *, context=None, quality=No
         limits.append("营养含估算区间；分项使用区间中点，整数分不代表测量精度，实际可能跨分档。")
     for key, nutrient, label, unit in TARGET_PARTS:
         low, high = totals[nutrient]["low"] / target[nutrient], totals[nutrient]["high"] / target[nutrient]
-        if (low < .75 <= high and not isclose(low, .75, rel_tol=1e-12, abs_tol=1e-12)
-                or low <= 1.30 < high and not isclose(high, 1.30, rel_tol=1e-12, abs_tol=1e-12)):
-            missing.append(label + "估算范围跨越明显偏离目标分档，需收窄估算依据")
-        rule = RULES[key]
-        part(key, label, rule["maximum"], target_points(amount[nutrient], target[nutrient], key),
+        lower, upper = rules[key]["partial_reference_ratio" if legacy else "zero_reference_ratio"]
+        if (low < lower <= high and not isclose(low, lower, rel_tol=1e-12, abs_tol=1e-12)
+                or low <= upper < high and not isclose(high, upper, rel_tol=1e-12, abs_tol=1e-12)):
+            missing.append(label + ("估算范围跨越明显偏离目标分档，需收窄估算依据" if legacy else "估算范围跨越连续评分零分界线，需保留区间复核"))
+        rule = rules[key]
+        explanation = (f"目标90%–110%（含边界）给{rule['maximum']}分，其余75%–130%（含边界）给{rule['partial_points']}分，之外0分。" if legacy else
+                       f"目标95%–105%（含边界）给{rule['maximum']}分，偏差5%至40%线性扣分，偏差40%及以上0分。")
+        part(key, label, rule["maximum"], target_points(amount[nutrient], target[nutrient], key, version=selected),
              f"{label}：约{amount[nutrient]:g}{'千卡' if unit == 'kcal' else '克'}，该日目标{target[nutrient]:g}{'千卡' if unit == 'kcal' else '克'}；"
-             f"目标90%–110%（含边界）给{rule['maximum']}分，其余75%–130%（含边界）给{rule['partial_points']}分，之外0分。"
-             "只评价目标执行，偏离不等于医学上的有害或不足。",
+             + explanation + "只评价目标执行，偏离不等于医学上的有害或不足。",
              amount[nutrient], target[nutrient], unit)
     # Retain existing applicability/health review independently of target points.
     # A review can pause the total, but never deduct an in-band macro component.
@@ -342,22 +442,25 @@ def score(totals, target, meals, analyzed, finished, *, context=None, quality=No
     limits.append(f"脂肪约占已记录能量{fat_fraction * 100:.1f}%；供能比例保留作背景，脂肪分按该日克数目标评分，不能据总脂肪判断脂肪质量。")
     evidence_totals = quality.get("totals") or {}
     for key in CORE_FOODS:
-        value, reference = evidence_totals.get(key), RULES["structure"][key]
+        value, reference = evidence_totals.get(key), rules["structure"][key]
+        maximum = food_maximum(key, version=selected)
         if not valid_range(value) or value.get("coverage") != meals:
             observed = (quality.get("observations") or {}).get(key) or []
             if observed or key in quality.get("unresolved_portions", []):
                 # Estimation belongs to dot's image review, not a name-to-grams heuristic.
                 missing.append(LABELS[key] + "需由AI完成已发照片的份量估算；不因未称重扣分")
-                part(key, LABELS[key], 10, None, "已出现的食物需按照片估量后计算，不给未量化罚分。")
+                part(key, LABELS[key], maximum, None, "已出现的食物需按照片估量后计算，不给未量化罚分。")
                 continue
             # This user's explicit complete-diary convention covers absent food categories,
             # not unknown micronutrients or wholly empty days (handled above).
             value = {"low": 0, "high": 0, "coverage": meals}
         intake = midpoint(value)
-        points = round(min(10, 10 * intake / reference), 1)
+        points = food_points(intake, key, version=selected)
         basis = "可食原重" if key == "vegetables_raw_edible_g" else "可食部重" if key == "fruit_edible_g" else "原料干重，熟重须有换算依据"
-        part(key, LABELS[key], 10, points,
-             f"约{intake:.0f}克（{basis}），参考{reference}克；按摄入÷参考×10计算，最多10分。只评价本日记录，不诊断人体缺乏。",
+        explanation = ("按摄入÷参考×10计算，最多10分。" if legacy else
+                       f"按摄入÷参考×{maximum}计分，少多少比例就扣该项多少比例；吃够或超过得{maximum}分，没吃0分。推荐量不变。")
+        part(key, LABELS[key], maximum, points,
+             f"约{intake:.0f}克（{basis}），参考{reference}克；" + explanation + "只评价本日记录，不诊断人体缺乏。",
              intake, reference, "g")
         if value["low"] != value["high"]:
             limits.append(LABELS[key] + "使用有来源的估算区间中点，份量并非精确实测。")
@@ -394,8 +497,8 @@ def score(totals, target, meals, analyzed, finished, *, context=None, quality=No
         result["alcohol_penalty"] = {"ethanol_g": round(ethanol_g, 4), "points": penalty, "formula": RULES["alcohol"]["formula"]}
 
     # An extreme deviation from a personal macro target retains the existing 79 cap.
-    if any(p["points"] == 0 for p in parts if p["key"] in ("energy", "protein", "fat", "carbs")):
-        total = min(total, RULES["severe_domain_cap"])
+    if legacy and any(p["points"] == 0 for p in parts if p["key"] in ("energy", "protein", "fat", "carbs")):
+        total = min(total, rules["severe_domain_cap"])
         limits.append("四项营养之一明显偏离该日目标，软件将总分最高限制为79，其他项目不能抵消至绿色；这是目标执行规则，不是医学风险判断。")
     result["score"] = round(total)
     return done("已评已记录饮食", "ready")

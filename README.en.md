@@ -2,7 +2,7 @@
 
 [简体中文](README.md) · [Project operating contract](SKILL.md)
 
-A local-first food diary, nutrition-estimation, and history viewer built with FastAPI, SQLite, and React. The application starts with **empty user data**: no personal database, meal or weight records, personal targets, account credentials, or hosted deployment are bundled. A real dashboard screenshot below was explicitly authorized for public display by its owner; it is documentation only, not default data imported on installation.
+A local-first food diary, nutrition-estimation, and history viewer built with FastAPI, SQLite, and React. The application starts with **empty user data**: no personal database, meal or weight records, personal targets, account credentials, or hosted deployment are bundled. All screenshots below use a fresh, empty data directory and contain no personal dietary data.
 
 The interface is primarily Chinese; this English README does not imply a fully translated UI.
 
@@ -16,11 +16,11 @@ The interface is primarily Chinese; this English README does not imply a fully t
 - An empty/unrecorded day means missing evidence, not zero intake, skipped meals, or fasting.
 - This is a personal recordkeeping tool, not medical diagnosis or a prescription. Estimates, targets, and scores are not precise measurements or clinical conclusions.
 
-## Main dashboard example
+## Complete empty dashboard
 
-The screenshot below shows the nutrition dashboard for the **2026-10-22 diet day**, with the owner’s explicit permission to publish the real recorded intake and displayed targets. The displayed intake is estimated from actual recorded meals, captured before the next 07:00 formal settlement. It is a UI example, not dietary advice for other people, and its data is not imported into the application database. The ring percentages show progress against this example’s personal nutrient targets, not a daily health score; these targets are not application defaults. Diet days use the Asia/Shanghai 07:00 boundary.
+This full dashboard was captured from the running application with a fresh, empty data directory. It is not a cropped detail and contains no demonstration meals, personal targets, or weight records. Empty fields mean information is unavailable, not zero intake or fasting. Nutrient-ring target progress and the daily score are different concepts.
 
-![Owner-authorized nutrition dashboard for the 2026-10-22 diet day](docs/images/dashboard-example-2026-10-22.jpg)
+![Complete empty dashboard from a fresh installation](docs/images/dashboard-full-empty.jpg)
 
 ## Empty history view
 
@@ -170,6 +170,18 @@ You may remove the temporary directory after testing; do not configure it as you
 - External scheduling or analysis integrations require separate implementation, testing, and authorization. The repository neither schedules execution nor calls models automatically.
 - Scores use a fixed **100-point denominator**, without renormalizing missing components. Display colors are **green at ≥85, yellow at ≥70, and red below 70**. An unavailable score remains unknown, not an invented zero.
 - Estimates retain ranges, sources, and estimate labels. Scores describe target adherence and food structure, not disease risk or clinical pass/fail thresholds.
+
+## v8 scoring rules (effective 2026-10-23)
+
+The current version is `diet-quality-v8-continuous-tolerance`, effective for **2026-10-23** onward by Asia/Shanghai diet date:
+
+- Seven components total 100 points: energy 25, protein 20, fat 15, carbohydrates 15, vegetables 10, fruit 10, whole grains/mixed beans 5.
+- For each macro/energy component, deviation is `d = abs(intake / target - 1)`. Deviation ≤5% earns full points; points fall linearly between 5% and 40%; deviation ≥40% earns zero for that component. Above-target and below-target deviations are symmetric.
+- Vegetables, fruit, and whole grains/mixed beans use references of 300g raw edible weight, 200g edible weight, and 50g dry ingredient weight respectively. Points scale with the fraction achieved and are capped at full points, with no excess penalty. Unknown portions are not evidence of no consumption.
+- Add all seven components, then retain the alcohol deduction of 1 point per 3g pure alcohol, capped at 30 points. The total cannot fall below zero. No dimensions are dropped, no renormalization is applied, and there is no additional 79-point cap.
+- Saved v6/v7 scores, weights, explanations, and versioned estimates remain unchanged; upgrading does not authorize rewriting personal history.
+
+These are software heuristics, not a clinically validated health index. Existing evidence, applicability, and missing-data safeguards still apply. See [full formulas, examples, and version boundaries](docs/diet-quality-scoring.md).
 
 ## Backup and restore
 

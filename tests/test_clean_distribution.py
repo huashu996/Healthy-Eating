@@ -32,7 +32,7 @@ def test_upgrade_keeps_seven_boundary(empty):
  db.init();assert db.settings()['daily_time']=='07:00';assert db.settings()['schedule_enabled'] is False
 
 def test_policy_weights():
- p=diet_policy.get_policy();assert sum(p['scoring_evidence']['macro_weights'].values())==70
+ p=diet_policy.get_policy();assert sum(p['scoring_evidence']['macro_weights'].values())==75
  assert p['scoring_evidence']['denominator']==100;assert p['execution']['scheduler_enabled'] is False
 
 @pytest.mark.parametrize('path',['health','settings','diet/overview','diet/history?month=2030-01','diet/body-metrics','providers','diet/recommendations'])
